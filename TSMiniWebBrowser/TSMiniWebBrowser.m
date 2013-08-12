@@ -36,9 +36,6 @@
 @synthesize showActionButton;
 @synthesize barStyle;
 @synthesize modalDismissButtonTitle;
-@synthesize barTintColor;
-@synthesize domainLockList;
-@synthesize currentURL;
 
 #define kToolBarHeight  44
 #define kTabBarHeight   49
@@ -66,12 +63,15 @@ enum actionSheetButtonIndex {
 
 -(void)showActivityIndicators {
     [activityIndicator setHidden:NO];
+    [loadingLbl setHidden:NO];
     [activityIndicator startAnimating];
+
     [UIApplication sharedApplication].networkActivityIndicatorVisible = YES;
 }
 
 -(void)hideActivityIndicators {
     [activityIndicator setHidden:YES];
+    [loadingLbl setHidden:YES];
     [activityIndicator stopAnimating];
     [UIApplication sharedApplication].networkActivityIndicatorVisible = NO;
 }
@@ -149,8 +149,16 @@ enum actionSheetButtonIndex {
     // Activity indicator is a bit special
     activityIndicator = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleWhite];
     activityIndicator.frame = CGRectMake(11, 7, 20, 20);
-    UIView *containerView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 43, 33)];
+    
+    loadingLbl = [[UILabel alloc] initWithFrame:CGRectMake(41, 7, 80, 20)];
+    loadingLbl.font = [UIFont fontWithName:@"OpenSans-Bold" size:14.0];
+    loadingLbl.text = NSLocalizedString(@"Loading...", nil);
+    loadingLbl.backgroundColor = [UIColor clearColor];
+    loadingLbl.textColor = [UIColor whiteColor];
+    UIView *containerView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 130, 33)]; //43
+    [containerView addSubview:loadingLbl];
     [containerView addSubview:activityIndicator];
+    
     UIBarButtonItem *buttonContainer = [[UIBarButtonItem alloc] initWithCustomView:containerView];
     
     // Add butons to an array
@@ -160,7 +168,7 @@ enum actionSheetButtonIndex {
     [toolBarButtons addObject:buttonGoForward];
     [toolBarButtons addObject:flexibleSpace];
     [toolBarButtons addObject:buttonContainer];
-    if (showReloadButton) {
+    if (showReloadButton) { 
         [toolBarButtons addObject:buttonReload];
     }
     if (showActionButton) {
@@ -170,9 +178,6 @@ enum actionSheetButtonIndex {
     
     // Set buttons to tool bar
     [toolBar setItems:toolBarButtons animated:YES];
-	
-	// Tint toolBar
-	[toolBar setTintColor:barTintColor];
 }
 
 -(void) initWebView {
@@ -180,7 +185,7 @@ enum actionSheetButtonIndex {
     if (mode == TSMiniWebBrowserModeModal) {
         webView = [[UIWebView alloc] initWithFrame:CGRectMake(0, kToolBarHeight, viewSize.width, viewSize.height-kToolBarHeight*2)];
     } else if(mode == TSMiniWebBrowserModeNavigation) {
-        webView = [[UIWebView alloc] initWithFrame:CGRectMake(0, 0, viewSize.width, viewSize.height-kToolBarHeight)];
+        webView = [[UIWebView alloc] initWithFrame:CGRectMake(0, kToolBarHeight, viewSize.width, viewSize.height-kToolBarHeight)];
     } else if(mode == TSMiniWebBrowserModeTabBar) {
         self.view.backgroundColor = [UIColor redColor];
         webView = [[UIWebView alloc] initWithFrame:CGRectMake(0, kToolBarHeight-1, viewSize.width, viewSize.height-kToolBarHeight+1)];
@@ -214,7 +219,6 @@ enum actionSheetButtonIndex {
         modalDismissButtonTitle = NSLocalizedString(@"Done", nil);
         forcedTitleBarText = nil;
         barStyle = UIBarStyleDefault;
-		barTintColor = nil;
     }
     
     return self;
@@ -269,20 +273,6 @@ enum actionSheetButtonIndex {
     [super viewDidUnload];
 }
 
-- (void) viewWillAppear:(BOOL)animated
-{
-	for (id subview in self.view.subviews)
-	{
-		if ([subview isKindOfClass: [UIWebView class]])
-		{
-			UIWebView *sv = subview;
-			[sv.scrollView setScrollsToTop:NO];
-		}
-	}
-	
-	[webView.scrollView setScrollsToTop:YES];
-}
-
 -(void) viewWillDisappear:(BOOL)animated {
     [super viewWillDisappear:animated];
     
@@ -293,9 +283,6 @@ enum actionSheetButtonIndex {
     
     // Restore Status bar style
     [[UIApplication sharedApplication] setStatusBarStyle:originalBarStyle animated:NO];
-    
-    // Stop loading
-    [webView stopLoading];
 }
 
 - (BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)interfaceOrientation
@@ -313,7 +300,7 @@ enum actionSheetButtonIndex {
         case UIInterfaceOrientationPortraitUpsideDown:
         case UIInterfaceOrientationPortrait:
             // Going to Portrait mode
-            for (UIScrollView *scroll in [webView subviews]) { //we get the scrollview
+            for (UIScrollView *scroll in [webView subviews]) { //we get the scrollview 
                 // Make sure it really is a scroll view and reset the zoom scale.
                 if ([scroll respondsToSelector:@selector(setZoomScale:)]){
                     scroll.minimumZoomScale = scroll.minimumZoomScale/ratioAspect;
@@ -324,7 +311,7 @@ enum actionSheetButtonIndex {
             break;
         default:
             // Going to Landscape mode
-            for (UIScrollView *scroll in [webView subviews]) { //we get the scrollview
+            for (UIScrollView *scroll in [webView subviews]) { //we get the scrollview 
                 // Make sure it really is a scroll view and reset the zoom scale.
                 if ([scroll respondsToSelector:@selector(setZoomScale:)]){
                     scroll.minimumZoomScale = scroll.minimumZoomScale *ratioAspect;
@@ -454,60 +441,15 @@ enum actionSheetButtonIndex {
         [[UIApplication sharedApplication] openURL:request.URL];
         return NO;
     }
-	
-	else
-	{
-		if ([[request.URL absoluteString] hasPrefix:@"http://www.youtube.com/v/"] ||
-			[[request.URL absoluteString] hasPrefix:@"http://itunes.apple.com/"] ||
-			[[request.URL absoluteString] hasPrefix:@"http://phobos.apple.com/"]) {
-			[[UIApplication sharedApplication] openURL:request.URL];
-			return NO;
-		}
-		
-		else
-		{
-            if (domainLockList == nil || [domainLockList isEqualToString:@""])
-            {
-				if (navigationType == UIWebViewNavigationTypeLinkClicked)
-				{
-					currentURL = request.URL.absoluteString;
-				}
-                
-                return YES;
-            }
-            
-            else
-            {
-                NSArray *domainList = [domainLockList componentsSeparatedByString:@","];
-                BOOL sendToSafari = YES;
-                
-                for (int x = 0; x < domainList.count; x++)
-                {
-                    if ([[request.URL absoluteString] hasPrefix:(NSString *)[domainList objectAtIndex:x]] == YES)
-                    {
-                        sendToSafari = NO;
-                    }
-                }
-				
-                if (sendToSafari == YES)
-                {
-                    [[UIApplication sharedApplication] openURL:[request URL]];
-                    
-                    return NO;
-                }
-                
-                else
-                {
-					if (navigationType == UIWebViewNavigationTypeLinkClicked)
-					{
-						currentURL = request.URL.absoluteString;
-					}
-                    
-                    return YES;
-                }
-            }
-		}
-	}
+    
+    if ([[request.URL absoluteString] hasPrefix:@"http://www.youtube.com/v/"] ||
+        [[request.URL absoluteString] hasPrefix:@"http://itunes.apple.com/"] ||
+        [[request.URL absoluteString] hasPrefix:@"http://phobos.apple.com/"]) {
+        [[UIApplication sharedApplication] openURL:request.URL];
+        return NO;
+    }
+    
+    return YES;
 }
 
 - (void)webViewDidStartLoad:(UIWebView *)webView {
@@ -536,7 +478,7 @@ enum actionSheetButtonIndex {
     if ([error code] == NSURLErrorCancelled) {
         return;
     }
-	
+
     // Show error alert
     UIAlertView *alert = [[UIAlertView alloc] initWithTitle:NSLocalizedString(@"Could not load page", nil)
                                                     message:error.localizedDescription
