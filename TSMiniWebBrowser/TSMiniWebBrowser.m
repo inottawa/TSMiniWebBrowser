@@ -185,7 +185,7 @@ enum actionSheetButtonIndex {
     if (mode == TSMiniWebBrowserModeModal) {
         webView = [[UIWebView alloc] initWithFrame:CGRectMake(0, kToolBarHeight, viewSize.width, viewSize.height-kToolBarHeight*2)];
     } else if(mode == TSMiniWebBrowserModeNavigation) {
-        webView = [[UIWebView alloc] initWithFrame:CGRectMake(0, kToolBarHeight, viewSize.width, viewSize.height-kToolBarHeight)];
+        webView = [[UIWebView alloc] initWithFrame:CGRectMake(0, 0, viewSize.width, viewSize.height-kToolBarHeight)];
     } else if(mode == TSMiniWebBrowserModeTabBar) {
         self.view.backgroundColor = [UIColor redColor];
         webView = [[UIWebView alloc] initWithFrame:CGRectMake(0, kToolBarHeight-1, viewSize.width, viewSize.height-kToolBarHeight+1)];
