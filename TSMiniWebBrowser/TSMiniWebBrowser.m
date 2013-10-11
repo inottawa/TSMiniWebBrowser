@@ -80,7 +80,7 @@ enum actionSheetButtonIndex {
     if ( webView.loading ) {
         [webView stopLoading];
     }
-    [self dismissModalViewControllerAnimated:YES];
+    [self dismissViewControllerAnimated:YES completion:nil];
     
     // Notify the delegate
     if (self.delegate != NULL && [self.delegate respondsToSelector:@selector(tsMiniWebBrowserDidDismiss)]) {
@@ -191,6 +191,10 @@ enum actionSheetButtonIndex {
         webView = [[UIWebView alloc] initWithFrame:CGRectMake(0, kToolBarHeight-1, viewSize.width, viewSize.height-kToolBarHeight+1)];
     }
     webView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+    if (floor(NSFoundationVersionNumber) <= NSFoundationVersionNumber_iOS_6_1) {
+        webView.scrollView.contentInset = UIEdgeInsetsMake(64, 0, 0, 0);
+    }
+
     [self.view addSubview:webView];
     
     webView.scalesPageToFit = YES;
