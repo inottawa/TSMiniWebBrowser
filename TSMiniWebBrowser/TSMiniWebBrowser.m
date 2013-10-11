@@ -192,7 +192,7 @@ enum actionSheetButtonIndex {
     }
     webView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     if (floor(NSFoundationVersionNumber) > NSFoundationVersionNumber_iOS_6_1) {
-        webView.scrollView.contentInset = UIEdgeInsetsMake(64, 0, 0, 0);
+        webView.scrollView.contentInset = UIEdgeInsetsMake(44, 0, 0, 0);
     }
 
     [self.view addSubview:webView];
